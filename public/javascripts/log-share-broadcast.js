@@ -48,8 +48,14 @@ Object.keys(storedConsole).forEach(key => {
 		return;
 	}
 
-	const payload = { method:key, args, trace: getStack() };
-	socket.emit('console', JSON.stringify(payload));
+	let payload = { method:key, args, trace: getStack() };
+	try {
+		JSON.stringify(payload);
+	} catch (e) {
+		console.error(e);
+		payload = { method:payload.method, args:["!!!! circular args, could not stringify to JSON, had to throw away."] trace: payload.trace }
+	}
+	socket.emit('console', payload);
 		storedConsole[key](...args)
 	}
 })
