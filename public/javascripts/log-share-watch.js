@@ -1,6 +1,6 @@
 
 if (!socket) {
-	var socket = io();
+	var socket = io('https://log-share.herokuapp.com/');
 	var storedConsole = {
 		log: console.log,
 		warn: console.warn,

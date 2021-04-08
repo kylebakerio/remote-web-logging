@@ -29,9 +29,9 @@ const io = require('socket.io')(server, {
     origin: true, //"https://example.com",
     path: '/',
     serveClient: false,
-    // methods: ["GET", "POST"],
+    methods: ["GET", "POST"],
     // allowedHeaders: ["my-custom-header"],
-    // credentials: true
+    credentials: true
   }
 });
 

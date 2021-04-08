@@ -13,6 +13,8 @@ app.use(cors())
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.options('*', cors()) // include before other routes
+
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
