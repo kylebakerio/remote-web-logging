@@ -39,14 +39,16 @@ io.on('connection', (socket) => {
   socket.on('console', (msg) => {
     io.emit('sharedConsole',msg)
 
-    msg = JSON.parse(msg)
+    try {
+      msg = JSON.parse(msg)
 
-    // console[msg.method](...(msg.args))
-
-    console.group('sharing '+msg.method)
-    console[msg.method](...(msg.args))
-    console.log(msg.trace)
-    console.groupEnd()
+      console.group(msg.method, msg.args[0])
+      console[msg.method](...(msg.args))
+      console.log(msg.trace)
+      console.groupEnd()
+    } catch (e) {
+      console.error("likely error with client message",e,msg)
+    }
     // console.log('message: ', msg);
   });
 
