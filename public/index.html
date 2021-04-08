@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+
+      #form { background: rgba(0, 0, 0, 0.15); padding: 0.25rem; position: fixed; bottom: 0; left: 0; right: 0; display: flex; height: 3rem; box-sizing: border-box; backdrop-filter: blur(10px); }
+      #input { border: none; padding: 0 1rem; flex-grow: 1; border-radius: 2rem; margin: 0.25rem; }
+      #input:focus { outline: none; }
+      #form > button { background: #333; border: none; padding: 0 1rem; margin: 0.25rem; border-radius: 3px; outline: none; color: #fff; }
+
+      #messages { list-style-type: none; margin: 0; padding: 0; }
+      #messages > li { padding: 0.5rem 1rem; }
+      #messages > li:nth-child(odd) { background: #efefef; }
+    </style>
+  </head>
+  <body>
+    <ul id="messages"></ul>
+    <form id="form" action="">
+      <input id="input" autocomplete="off" /><button>Send</button>
+    </form>
+  </body>
+
+  
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="/javascripts/log-share-broadcast.js"></script>
+	<script src="/javascripts/log-share-watch.js"></script>
+
+
+	<!-- <script>
+		window.socket = io();
+
+		socket.on('sharedConsole', function(msg) {
+			msg = JSON.parse(msg)
+			console.info("sharedConsole", msg)
+			// return
+
+			// var item = document.createElement('li');
+			// item.textContent = msg;
+			// messages.appendChild(item);
+			// window.scrollTo(0, document.body.scrollHeight);
+
+			// storedConsole.log(msg)
+
+			console.group('received ' + msg.method)
+			storedConsole[msg.method](...(msg.args))
+			storedConsole[msg.method](msg.trace/*.split('\n').slice(2).join('\n')*/)
+			// slice off first two because top level says 'Error' which is because we're using Error().stack, and second one says line of the socket emit call itself. 
+			// After that, we get to the actual console method call's end
+			console.groupEnd(msg.method)
+		});
+	</script>
+	<script>
+
+		// var form = document.getElementById('form');
+		// var input = document.getElementById('input');
+
+		// form.addEventListener('submit', function(e) {
+			// e.preventDefault();
+			// if (input.value) {
+			//   console.log("hi")
+			//   socket.emit('chat message', input.value);
+			//   input.value = '';
+			// }
+		// });
+
+
+	  	const storedConsole = {
+	  		log: console.log,
+	  		warn: console.warn,
+	  		error: console.error,
+	  	};
+
+	  	// manual calls to console.error() don't trigger an Error() object with a trace, so we handle those like logs and warnings
+	  	// however, real errors do, and if we don't grab their trace, we'll lose it.
+	  	const realErrorHandler = (message, trace) => {
+	  		socket.emit('console', JSON.stringify({ method:'error', args:["-" /*message*/ /* we leave this empty, because it's included in the complete trace */], trace: (trace || getStack()) }));
+
+	  		return
+	 		storedConsole.error(trace) // contains the message as well
+	  	}
+
+	  	const getStack = () => {
+	  		// remove the wrapper when we generate a stack
+	  		return Error().stack.split('\n').slice(2).join('\n');
+	  	}
+
+	  	Object.keys(storedConsole).forEach(key => {
+	  		storedConsole[key] = console[key];
+	  		window.console[key] = function(...args) {
+
+				if (args[0].message && args[0].stack && !args[1]) {
+					console.info("got a caught error item")
+					realErrorHandler(args[0].message, args[0].stack)
+					return;
+				}
+
+				const payload = { method:key, args, trace: getStack() };
+				socket.emit('console', JSON.stringify(payload));
+		 		storedConsole[key](...args)
+	  		}
+	  	})
+
+
+	  	// this seems to just overlap with addEventListener("error")
+		// window.onerror = function (message, file, line, col, error) {
+		//    // alert("Error occurred: " + error.message);
+		//    debugger
+		//    // console.error(...arguments)
+		//    console.error(message)
+		//    return false;
+		// };
+
+		// window.onerror = console.debug
+
+		window.addEventListener("error", function (e) {
+		   // alert("Error occurred: " + e.error.message);
+		   console.info('will send intercepted error')
+		   // console.error(e.message)
+		   realErrorHandler(e.message, e.error.stack)
+		   return false;
+		});
+
+		window.addEventListener('unhandledrejection', function (e) {
+		  	// alert("Error occurred: " + e.reason.message);
+			console.info('will send intercepted unhandled promise rejection')
+			// console.error(e.reason.message, e.reason.stack)
+			realErrorHandler(e.reason.message, e.reason.stack)
+			return false;
+		});
+
+
+		// Note: You can catch programmer-generated and runtime exceptions, but you can’t catch JavaScript syntax errors.
+		// ...sort of?
+
+		// let x;
+		// try {
+		// 	eval('hoo bar');
+		// 	// (() => {})()
+		// } catch(e) {
+		// 	console.error(e)
+		// }
+
+		// throw new SyntaxError('Hello', 'someFile.js', 10);
+		// console.log(1, 2, 3);
+		// (new Promise(() => { throw new Error('promise failing')}))//.catch(console.warn)
+	</script> -->
+	<script>
+		(function(){
+
+		/**
+		 * Capture error data for debugging in web console.
+		 */
+
+		var captures = [];
+
+		/**
+		 * Wait until `window.onload`, so any external scripts
+		 * you might load have a chance to set their own error handlers,
+		 * which we don't want to override.
+		 */
+
+		window.addEventListener('load', onload);
+
+		/**
+		 * Custom global function to standardize 
+		 * window.onerror so it works like you'd think.
+		 *
+		 * @see http://www.quirksmode.org/dom/events/error.html
+		 */
+
+		window.onanyerror = window.onanyerror || onanyerrorx;
+
+		/**
+		 * Hook up all error handlers after window loads.
+		 */
+
+		function onload() {
+		  handleGlobal();
+		  handleXMLHttp();
+		  handleImage();
+		  handleScript();
+		  handleEvents();
+		}
+
+		/**
+		 * Handle global window events.
+		 */
+
+		function handleGlobal() {
+		  var onerrorx = window.onerror;
+		  window.addEventListener('error', onerror);
+
+		  function onerror(msg, url, line, col, error) {
+		    window.onanyerror.apply(this, arguments);
+		    if (onerrorx) return onerrorx.apply(null, arguments);
+		  }
+		}
+
+		/**
+		 * Handle ajax request errors.
+		 */
+
+		function handleXMLHttp() {
+		  var sendx = XMLHttpRequest.prototype.send;
+		  window.XMLHttpRequest.prototype.send = function(){
+		    handleAsync(this);
+		    return sendx.apply(this, arguments);
+		  };
+		}
+
+		/**
+		 * Handle image errors.
+		 */
+
+		function handleImage() {
+		  var ImageOriginal = window.Image;
+		  window.Image = ImageOverride;
+
+		  /**
+		   * New `Image` constructor. Might cause some problems,
+		   * but not sure yet. This is at least a start, and works on chrome.
+		   */
+
+		  function ImageOverride() {
+		    var img = new ImageOriginal;
+		    onnext(function(){ handleAsync(img); });
+		    return img;
+		  }
+		}
+
+		/**
+		 * Handle script errors.
+		 */
+
+		function handleScript() {
+		  var HTMLScriptElementOriginal = window.HTMLScriptElement;
+		  window.HTMLScriptElement = HTMLScriptElementOverride;
+
+		  /**
+		   * New `HTMLScriptElement` constructor.
+		   *
+		   * Allows us to globally override onload.
+		   * Not ideal to override stuff, but it helps with debugging.
+		   */
+
+		  function HTMLScriptElementOverride() {
+		    var script = new HTMLScriptElement;
+		    onnext(function(){ handleAsync(script); });
+		    return script;
+		  }
+		}
+
+		/**
+		 * Handle errors in events.
+		 *
+		 * @see http://stackoverflow.com/questions/951791/javascript-global-error-handling/31750604#31750604
+		 */
+
+		function handleEvents() {
+		  var addEventListenerx = window.EventTarget.prototype.addEventListener;
+		  window.EventTarget.prototype.addEventListener = addEventListener;
+		  var removeEventListenerx = window.EventTarget.prototype.removeEventListener;
+		  window.EventTarget.prototype.removeEventListener = removeEventListener;
+
+		  function addEventListener(event, handler, bubble) {
+		    var handlerx = wrap(handler);
+		    return addEventListenerx.call(this, event, handlerx, bubble);
+		  }
+
+		  function removeEventListener(event, handler, bubble) {
+		    handler = handler._witherror || handler;
+		    removeEventListenerx.call(this, event, handler, bubble);
+		  }
+
+		  function wrap(fn) {
+		    fn._witherror = witherror;
+
+		    function witherror() {
+		      try {
+		        fn.apply(this, arguments);
+		      } catch(e) {
+		        window.onanyerror.apply(this, e);
+		        throw e;
+		      }
+		    }
+		    return fn;
+		  }
+		}
+
+		/**
+		 * Handle image/ajax request errors generically.
+		 */
+
+		function handleAsync(obj) {
+		  var onerrorx = obj.onerror;
+		  obj.onerror = onerror;
+		  var onabortx = obj.onabort;
+		  obj.onabort = onabort;
+		  var onloadx = obj.onload;
+		  obj.onload = onload;
+
+		  /**
+		   * Handle `onerror`.
+		   */
+
+		  function onerror(error) {
+		    window.onanyerror.call(this, error);
+		    if (onerrorx) return onerrorx.apply(this, arguments);
+		  };
+
+		  /**
+		   * Handle `onabort`.
+		   */
+
+		  function onabort(error) {
+		    window.onanyerror.call(this, error);
+		    if (onabortx) return onabortx.apply(this, arguments);
+		  };
+
+		  /**
+		   * Handle `onload`.
+		   *
+		   * For images, you can get a 403 response error,
+		   * but this isn't triggered as a global on error.
+		   * This sort of standardizes it.
+		   *
+		   * "there is no way to get the HTTP status from a 
+		   * request made by an img tag in JavaScript."
+		   * @see http://stackoverflow.com/questions/8108636/how-to-get-http-status-code-of-img-tags/8108646#8108646
+		   */
+
+		  function onload(request) {
+		    if (request.status && request.status >= 400) {
+		      window.onanyerror.call(this, request);
+		    }
+		    if (onloadx) return onloadx.apply(this, arguments);
+		  }
+		}
+
+		/**
+		 * Generic error handler.
+		 *
+		 * This shows the basic implementation, 
+		 * which you could override in your app.
+		 */
+
+		function onanyerrorx(entity) {
+		  var display = entity;
+
+		  // ajax request
+		  if (entity instanceof XMLHttpRequest) {
+		    // 400: http://example.com/image.png
+		    display = entity.status + ' ' + entity.responseURL;
+		  } else if (entity instanceof Event) {
+		    // global window events, or image events
+		    var target = entity.currentTarget;
+		    display = target;
+		  } else {
+		    // not sure if there are others
+		  }
+
+		  capture(entity);
+		  console.log('[onanyerror]', display, entity);
+		}
+
+		/**
+		 * Capture stuff for debugging purposes.
+		 *
+		 * Keep them in memory so you can reference them
+		 * in the chrome debugger as `onanyerror0` up to `onanyerror99`.
+		 */
+
+		function capture(entity) {
+			captures.push(entity);
+			if (captures.length > 100) captures.unshift();
+
+			// keep the last ones around
+			var i = captures.length;
+			while (--i) {
+			 var x = captures[i];
+			 window['onanyerror' + i] = x;
+			}
+		}
+
+		/**
+		* Wait til next code execution cycle as fast as possible.
+		*/
+
+		function onnext(fn) {
+			setTimeout(fn, 0);
+		}
+
+		})();
+
+
+		window.onanyerror = function(entity){
+		  console.log('some error', entity);
+		};
+	</script>
+	<script id="badscript" src="http://fale.addr.coo/nope"></script>
+	<script>
+		document.querySelector('#badscript').addEventListener("error", function(e) {
+		    if ( e && e.target && e.target.nodeName && e.target.nodeName.toLowerCase() == "img" ) {
+		        alert( 'Bad image src: ' + e.target.src);
+		    }
+		}, true);
+	</script>
+</html>
