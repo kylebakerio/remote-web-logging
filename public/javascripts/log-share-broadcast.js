@@ -50,7 +50,7 @@ Object.keys(storedConsole).forEach(key => {
 
 	let payload = { method:key, args, trace: getStack() };
 	try {
-		JSON.stringify(payload);
+		payload = JSON.stringify(payload);
 	} catch (e) {
 		console.error(e);
 		payload = { method:payload.method, args:["!!!! circular args, could not stringify to JSON, had to throw away."], trace: payload.trace }
