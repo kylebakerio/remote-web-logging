@@ -54,6 +54,7 @@ Object.keys(storedConsole).forEach(key => {
 	} catch (e) {
 		console.error(e);
 		payload = { method:payload.method, args:["!!!! circular args, could not stringify to JSON, had to throw away."], trace: payload.trace }
+		payload = JSON.stringify(payload)
 	}
 	socket.emit('console', payload);
 		storedConsole[key](...args)
