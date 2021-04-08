@@ -24,7 +24,14 @@ var server = http.createServer(app);
 
 
 // adding socket.io stuff
-const io = require('socket.io')(server);
+const io = require('socket.io')(server, {
+  cors: {
+    origin: true, //"https://example.com",
+    // methods: ["GET", "POST"],
+    // allowedHeaders: ["my-custom-header"],
+    // credentials: true
+  }
+});
 
 io.on('connection', (socket) => {
   socket.on('console', (msg) => {
