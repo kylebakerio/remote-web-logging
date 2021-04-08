@@ -23,8 +23,8 @@ socket.on('sharedConsole', function(msg) {
 	// window.scrollTo(0, document.body.scrollHeight);
 
 	// storedConsole.log(msg)
-
-	console.groupCollapsed(msg.method, msg.args[0])
+	if (msg.method !== "log") storedConsole[msg.method](msg.method.toUpperCase(), msg.args[0])
+	console.groupCollapsed()
 	storedConsole[msg.method](...(msg.args))
 	storedConsole[msg.method](msg.trace/*.split('\n').slice(2).join('\n')*/)
 	// slice off first two because top level says 'Error' which is because we're using Error().stack, and second one says line of the socket emit call itself. 
