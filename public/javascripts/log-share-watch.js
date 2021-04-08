@@ -14,7 +14,7 @@ else {
 
 socket.on('sharedConsole', function(msg) {
 	msg = JSON.parse(msg)
-	console.info("sharedConsole", msg)
+	// console.info("sharedConsole", msg)
 	// return
 
 	// var item = document.createElement('li');
