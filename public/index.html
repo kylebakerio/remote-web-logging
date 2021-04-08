@@ -28,7 +28,7 @@
 	<script src="/javascripts/log-share-watch.js"></script> -->
 	<script>
 		if (!socket) {
-			var socket = io('https://log-share.herokuapp.com/');
+			var socket = location.hostname === "localhost" ? io() : io('https://log-share.herokuapp.com/');
 			var storedConsole = {
 				log: console.log,
 				warn: console.warn,
@@ -38,7 +38,7 @@
 		else {
 			console.warn("won't declare socket/storedConsole a second time")
 		}
-		
+
 		const injectScript = function injectScript (src) {
 		    return new Promise(resolve => {
 		      var script = document.createElement('script');

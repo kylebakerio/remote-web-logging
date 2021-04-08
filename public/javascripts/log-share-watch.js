@@ -1,6 +1,6 @@
 
 if (!socket) {
-	var socket = io('https://log-share.herokuapp.com/');
+	var socket = location.hostname === "localhost" ? io() : io('https://log-share.herokuapp.com/');
 	var storedConsole = {
 		log: console.log,
 		warn: console.warn,
@@ -24,7 +24,7 @@ socket.on('sharedConsole', function(msg) {
 
 	// storedConsole.log(msg)
 	if (msg.method !== "log") storedConsole[msg.method](msg.method.toUpperCase(), msg.args[0])
-	console.groupCollapsed()
+	console.groupCollapsed(msg.method === "log" ? msg.args[0] : "-")
 	storedConsole[msg.method](...(msg.args))
 	storedConsole[msg.method](msg.trace/*.split('\n').slice(2).join('\n')*/)
 	// slice off first two because top level says 'Error' which is because we're using Error().stack, and second one says line of the socket emit call itself. 
