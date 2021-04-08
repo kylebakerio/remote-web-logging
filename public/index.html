@@ -22,11 +22,79 @@
     </form>
   </body>
 
-  
-	<script src="/socket.io/socket.io.js"></script>
-	<script src="/javascripts/log-share-broadcast.js"></script>
-	<script src="/javascripts/log-share-watch.js"></script>
 
+	<script src="/socket.io/socket.io.js"></script>
+<!-- 	<script src="/javascripts/log-share-broadcast.js"></script>
+	<script src="/javascripts/log-share-watch.js"></script> -->
+	<script>
+		if (!socket) {
+			var socket = io();
+			var storedConsole = {
+				log: console.log,
+				warn: console.warn,
+				error: console.error,
+			};
+		}
+		else {
+			console.warn("won't declare socket/storedConsole a second time")
+		}
+		
+		const injectScript = function injectScript (src) {
+		    return new Promise(resolve => {
+		      var script = document.createElement('script');
+		      script.onload = resolve
+		      script.src = src;
+		      document.head.appendChild(script);
+		    })
+		};
+
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const shareLogs = urlParams.get('shareLogs')
+		if (shareLogs) {
+			console.log("will share logs")
+			// injectScript("/socket.io/socket.io.js")
+			// .then(() => {
+			// 	setTimeout(() => {
+					injectScript("/javascripts/log-share-broadcast.js")
+
+			// 	},2000)
+			// })
+		} else {
+			console.log('no share logs')
+			// injectScript("/socket.io/socket.io.js")
+			injectScript("/javascripts/log-share-watch.js")
+		}
+
+		var form = document.getElementById('form');
+		var input = document.getElementById('input');
+
+		form.addEventListener('submit', function(e) {
+			e.preventDefault();
+			if (input.value) {
+			  console.log("hi")
+			  socket.emit('chat message', input.value);
+			  input.value = '';
+			}
+		});
+
+
+		socket.on('chat message', function(msg) {
+			// msg = JSON.parse(msg)
+			// console.info("sharedConsole", msg)
+			// return
+
+			var item = document.createElement('li');
+			item.textContent = msg;
+			messages.appendChild(item);
+			window.scrollTo(0, document.body.scrollHeight);
+		})
+
+		var item = document.createElement('li');
+		item.textContent = "Open the console to see a live console stream from connected client";
+		messages.appendChild(item);
+		window.scrollTo(0, document.body.scrollHeight);
+	</script>
 
 	<!-- <script>
 		window.socket = io();
@@ -52,19 +120,6 @@
 		});
 	</script>
 	<script>
-
-		// var form = document.getElementById('form');
-		// var input = document.getElementById('input');
-
-		// form.addEventListener('submit', function(e) {
-			// e.preventDefault();
-			// if (input.value) {
-			//   console.log("hi")
-			//   socket.emit('chat message', input.value);
-			//   input.value = '';
-			// }
-		// });
-
 
 	  	const storedConsole = {
 	  		log: console.log,
@@ -146,7 +201,7 @@
 		// console.log(1, 2, 3);
 		// (new Promise(() => { throw new Error('promise failing')}))//.catch(console.warn)
 	</script> -->
-	<script>
+	<!-- <script>
 		(function(){
 
 		/**
@@ -406,5 +461,5 @@
 		        alert( 'Bad image src: ' + e.target.src);
 		    }
 		}, true);
-	</script>
+	</script> -->
 </html>

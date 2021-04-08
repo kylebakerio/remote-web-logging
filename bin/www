@@ -13,6 +13,7 @@ var http = require('http');
  */
 
 var port = normalizePort(process.env.PORT || '3000');
+console.log("on port", port)
 app.set('port', port);
 
 /**
@@ -28,6 +29,7 @@ const io = require('socket.io')(server);
 io.on('connection', (socket) => {
   socket.on('console', (msg) => {
     io.emit('sharedConsole',msg)
+
     msg = JSON.parse(msg)
 
     // console[msg.method](...(msg.args))
@@ -38,6 +40,11 @@ io.on('connection', (socket) => {
     console.groupEnd()
     // console.log('message: ', msg);
   });
+
+  socket.on("chat message", (msg) => {
+    io.emit('chat message',msg)
+
+  })
 });
 //
 
