@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start-default": "node ./bin/www",
-    "start": "node ./app.js"
+    "start": "node ./bin/www",
+    "start-neu": "node ./app.js"
   },
   "dependencies": {
     "cookie-parser": "~1.4.4",

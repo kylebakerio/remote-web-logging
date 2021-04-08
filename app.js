@@ -1,13 +1,12 @@
 const express = require('express');
 const app = express();
-const http = require('http');
-const server = http.createServer(app);
-const io = require('socket.io')(server);
 var path = require('path');
 
+const http = require('http');
+const server = http.createServer(app);
+// const io = require('socket.io')(server);
+
 app.use(express.static(path.join(__dirname, 'public')));
-
-
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
@@ -17,24 +16,24 @@ app.get('/watch/:sessionId', (req,res) => {
     
 })
 
-io.on('connection', (socket) => {
-  socket.on('console', (msg) => {
-  	io.emit('sharedConsole',msg)
-  	msg = JSON.parse(msg)
+// io.on('connection', (socket) => {
+//   socket.on('console', (msg) => {
+//   	io.emit('sharedConsole',msg)
+//   	msg = JSON.parse(msg)
 
-  	// console[msg.method](...(msg.args))
+//   	// console[msg.method](...(msg.args))
 
-  	console.group('sharing '+msg.method)
-  	console[msg.method](...(msg.args))
-  	console.log(msg.trace)
-  	console.groupEnd()
-    // console.log('message: ', msg);
-  });
-});
+//   	console.group('sharing '+msg.method)
+//   	console[msg.method](...(msg.args))
+//   	console.log(msg.trace)
+//   	console.groupEnd()
+//     // console.log('message: ', msg);
+//   });
+// });
 
-server.listen(3000, () => {
-  console.log('listening on *:3000');
-});
+// server.listen(3000, () => {
+//   console.log('listening on *:3000');
+// });
 
 
 
@@ -92,5 +91,5 @@ server.listen(3000, () => {
 //   console.log('listening on *:3000');
 // });
 
-// module.exports = app;
+module.exports = app;
 

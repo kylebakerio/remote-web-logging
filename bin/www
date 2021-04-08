@@ -21,6 +21,27 @@ app.set('port', port);
 
 var server = http.createServer(app);
 
+
+// adding socket.io stuff
+const io = require('socket.io')(server);
+
+io.on('connection', (socket) => {
+  socket.on('console', (msg) => {
+    io.emit('sharedConsole',msg)
+    msg = JSON.parse(msg)
+
+    // console[msg.method](...(msg.args))
+
+    console.group('sharing '+msg.method)
+    console[msg.method](...(msg.args))
+    console.log(msg.trace)
+    console.groupEnd()
+    // console.log('message: ', msg);
+  });
+});
+//
+
+
 /**
  * Listen on provided port, on all network interfaces.
  */
