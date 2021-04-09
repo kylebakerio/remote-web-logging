@@ -35,6 +35,8 @@ const io = require('socket.io')(server, {
   }
 });
 
+const serverStart = new Date();
+
 const userAuthenticated = {
   // dynamically populated
 };
@@ -53,8 +55,17 @@ const watchLiveMap = {
   // id: bool
 }
 
-io.on('connection', (socket) => {
+const getActiveUserCount = () => {
+  let count = 0;
+  for (let [id, socket] of io.of("/").sockets) {
+    count++
+  }
+  return count
+}
 
+io.on('connection', (socket) => {
+  socket.emit('chat message', "> connected to server, server up since " + serverStart) // make private message to this user
+  io.emit('chat message', 'new client connected')
 
   socket.on('console', (msg) => {
     // share with authenticated connected users:
@@ -64,7 +75,6 @@ io.on('connection', (socket) => {
         console.log(id, 'is authorized')
         // io.emit('sharedConsole', msg) // make private message to this user
         if (watchLiveMap[id]) socket.emit('sharedConsole', msg) // maybe this does it?
-
       } else {
         console.log(id, 'is not authorized')
       }
@@ -73,9 +83,11 @@ io.on('connection', (socket) => {
 
     // store in sessions:
     if (!sessionUserMap.hasOwnProperty(socket.id)) {
+      const userSessionDate = new Date()
       sessionUserMap[socket.id] = sessions.length;
-      sessionDateMap[(new Date())] = sessions.length;
+      sessionDateMap[(userSessionDate)] = sessions.length;
       sessions.push([]);
+      io.emit('chat message', 'new session broadcast started: ' + userSessionDate)
     }
     const sessionIndex = sessionUserMap[socket.id];
     sessions[sessionIndex].push(msg);
@@ -115,43 +127,56 @@ io.on('connection', (socket) => {
       shareDateMenu()
       // send message that user authenticated
     }
-    if (checkAuth(socket) && msg.includes("how to watch")) {
-      echoBack()
-      socket.emit('chat message', '> url.com?shareLogs=true&sessionMessage=any-helpful-description')      
-    }
-    if (checkAuth(socket) && msg.includes('dates')) {
-      echoBack()
-      shareDateMenu()
-    }
-    if (checkAuth(socket) && msg.includes('commands')) {
-      echoBack()
-      socket.emit('chat message', '> dates, live on, live off, [timestamp], mobilemodeon, mobilemodeoff, how to watch')
-    }
-    if (checkAuth(socket) && msg.includes('live off')) {
-      echoBack()
-      watchLiveMap[socket.id] = false;
-      socket.emit('chat message', '> live off')
-    }
-    if (checkAuth(socket) && msg.includes('live on')) {
-      echoBack()
-      watchLiveMap[socket.id] = true;
-      socket.emit('chat message', '> live on')
-    }
-    if (checkAuth(socket) && msg.includes('GMT')) {
-      echoBack()
-      const sessionIndex = sessionDateMap[msg];
-      console.log(msg, "index is", sessionIndex)
-      if (sessionIndex > -1) {
-        // socket.emit('sharedConsole', JSON.stringify({method:"groupCollapsed", args:["begin replay of: " + msg]}))
-        sessions[sessionIndex].forEach(aLog => {
-          socket.emit('sharedConsole', aLog)
-        })
-        // socket.emit('sharedConsole', JSON.stringify({method:"groupEnd", args:["end replay of: " + msg]}))
-        socket.emit('chat message', '> replay end')
-      } else {
-        socket.emit('chat message', '> failed - must be perfect copy/paste of whole timestamp')
+
+    if (checkAuth(socket)) {
+      
+      if (msg.includes('usercount')) {
+        echoBack()
+        const userCount = getActiveUserCount();
+        socket.emit('chat message', "> " + userCount)  
       }
-    }
+      if (msg.includes('serverstart')) {
+        echoBack()
+        socket.emit('chat message', "> " + serverStart)  
+      }
+      if (msg.includes("howtowatch")) {
+        echoBack()
+        socket.emit('chat message', '> url.com?shareLogs=true&sessionMessage=any-helpful-description')      
+      }
+      if (msg.includes('dates')) {
+        echoBack()
+        shareDateMenu()
+      }
+      if (msg.includes('commands')) {
+        echoBack()
+        socket.emit('chat message', '> dates, liveon, liveoff, [timestamp], mobilemodeon, mobilemodeoff, howtowatch, serverstart, usercount')
+      }
+      if (msg.includes('liveoff')) {
+        echoBack()
+        watchLiveMap[socket.id] = false;
+        socket.emit('chat message', '> live off')
+      }
+      if (msg.includes('liveon')) {
+        echoBack()
+        watchLiveMap[socket.id] = true;
+        socket.emit('chat message', '> live on')
+      }
+      if (msg.includes('GMT')) {
+        echoBack()
+        const sessionIndex = sessionDateMap[msg];
+        console.log(msg, "index is", sessionIndex)
+        if (sessionIndex > -1) {
+          // socket.emit('sharedConsole', JSON.stringify({method:"groupCollapsed", args:["begin replay of: " + msg]}))
+          sessions[sessionIndex].forEach(aLog => {
+            socket.emit('sharedConsole', aLog)
+          })
+          // socket.emit('sharedConsole', JSON.stringify({method:"groupEnd", args:["end replay of: " + msg]}))
+          socket.emit('chat message', '> replay end')
+        } else {
+          socket.emit('chat message', '> failed - must be perfect copy/paste of whole timestamp')
+        }
+      }
+    } 
     if (!alreadyEcho) {
       if (msg.includes('//')) {
         // guaranteed privacy, prevents leaked typos
