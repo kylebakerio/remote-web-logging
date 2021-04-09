@@ -106,10 +106,6 @@ io.on('connection', (socket) => {
     const shareDateMenu = () => socket.emit('chat message', ["> sessions available for replay:"].concat(Object.keys(sessionDateMap).concat('> copy/paste a date to replay that log session')).join('\n'))
     let wasCommand = false;
     
-    if (msg.includes("how to watch")) {
-      echoBack()
-      socket.emit('chat message', '> url.com?shareLogs=true&sessionMessage=any-helpful-description')      
-    }
     if (msg.includes("ireallyamsuchahugefanofpuppies")) {
       echoBack()
       console.log("authenticated user",socket.id)
@@ -119,13 +115,17 @@ io.on('connection', (socket) => {
       shareDateMenu()
       // send message that user authenticated
     }
+    if (checkAuth(socket) && msg.includes("how to watch")) {
+      echoBack()
+      socket.emit('chat message', '> url.com?shareLogs=true&sessionMessage=any-helpful-description')      
+    }
     if (checkAuth(socket) && msg.includes('dates')) {
       echoBack()
       shareDateMenu()
     }
     if (checkAuth(socket) && msg.includes('commands')) {
       echoBack()
-      socket.emit('chat message', '> dates, live on, live off, [timestamp], mobilemodeon, mobilemodeoff')
+      socket.emit('chat message', '> dates, live on, live off, [timestamp], mobilemodeon, mobilemodeoff, how to watch')
     }
     if (checkAuth(socket) && msg.includes('live off')) {
       echoBack()
