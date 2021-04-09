@@ -100,7 +100,7 @@ const broadcastToAuthorized = (type, msg) => {
 io.on('connection', (socket) => {
   socket.emit('chat message', "> connected to server, server up since " + serverStart) // make private message to this user
   console.log("broadcasting new connection from", socket.id)
-  socket.broadcast.emit('chat message', '> new client connected')
+  // socket.broadcast.emit('chat message', '> new client connected')
 
   socket.on('console', (msg) => {
     if (!memDB.sessionUserMap.hasOwnProperty(socket.id)) {
@@ -147,13 +147,18 @@ io.on('connection', (socket) => {
     let wasCommand = false;
     
     let lowercasedMessage = msg.toLowerCase()
+
     if (lowercasedMessage.includes("ireallyamsuchahugefanofpuppies")) {
+      broadcastToAuthorized('chat message', '> new watcher authenticated')
+
       echoBack()
       console.log("authenticated user",socket.id)
       memDB.userAuthenticated[socket.id] = true;
       memDB.watchLiveMap[socket.id] = true;
       socket.emit('chat message','> welcome watcher')
       shareDateMenu()
+
+
       // send message that user authenticated
     }
 
