@@ -89,7 +89,12 @@
 		});
 
 		function renderTextToChat(txt) {
-			let msgs = txt.split("\n");
+			let msgs;
+			try {
+				msgs = txt.split("\n");
+			} catch (e) {
+				storedConsole.error("could not render to chat:", txt, e)
+			}
 
 			msgs.forEach(m => {
 				var item = document.createElement('li');

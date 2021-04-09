@@ -17,16 +17,6 @@ storedConsole = {
 socket.on('sharedConsole', function(msg) {
 	msg = JSON.parse(msg)
 
-	if (window.customRender) {
-		let toString;
-		try {
-			toString = typeof msg.args[0] === "string" ? msg.args[0] : JSON.stringify(msg.args[0]);
-		} catch (e) {
-			toString = `!!! DROPPED ${msg.method.toUpperCase()}, can't make string`
-			storedConsole.error(e)
-		}
-		window.customRender(toString)
-	}
 	// console.info("sharedConsole", msg)
 	// return
 
@@ -44,4 +34,25 @@ socket.on('sharedConsole', function(msg) {
 	// slice off first two because top level says 'Error' which is because we're using Error().stack, and second one says line of the socket emit call itself. 
 	// After that, we get to the actual console method call's end
 	console.groupEnd(msg.method)
+
+
+	if (window.customRender) {
+		let toString;
+		let argToStringify;
+		if (msg.args[0]) {
+			argToStringify = msg.args[0]
+		} else if (msg.args[1]) {
+			argToStringify = msg.args[1]
+		} else {
+			argToStringify = "(args empty)"
+		}
+		try {
+			toString = typeof argToStringify === "string" ? argToStringify : JSON.stringify(argToStringify);
+		} catch (e) {
+			toString = `!!! DROPPED ${msg.method.toUpperCase()}, can't make string`
+			storedConsole.error(e)
+		}
+		window.customRender(toString)
+	}
+	
 });
