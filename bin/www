@@ -37,22 +37,43 @@ const io = require('socket.io')(server, {
 
 const serverStart = new Date();
 
-const userAuthenticated = {
-  // dynamically populated
-};
+const memDB = {
+  userAuthenticated: {
+    // dynamically populated
+  },
 
-const sessions = []
+  sessions: [],
 
-const sessionUserMap = {
-  // id : index
+  sessionUserMap: {
+    // id : index
+  },
+
+  sessionDateMap: {
+    // date: index
+  },
+
+  watchLiveMap: {
+    // id: bool
+  },
 }
 
-const sessionDateMap = {
-  // date: index
+const exportDB = (socket) => {
+  return JSON.stringify(memDB);
 }
 
-const watchLiveMap = {
-  // id: bool
+const importDB = (db, socket) => {
+  // basic implementation, WIPES OUT ANY EXISTING RECORDS, ONLY MEANT TO BE USED ON FRESH STARTED SYSTEM
+  let parsedDb;
+  try {
+    parsedDb = JSON.parse(db);
+    memDB.sessions = parsedDb.sessions;
+    memDB.sessionDateMap = parsedDb.sessionDateMap;
+  } catch (e) {
+    socket.emit('chat message','> error importing DB')
+    socket.emit('chat message', '> ' + e)
+    return
+  }
+  socket.emit('chat message','> db import successful, imported ' + memDB.sessions.length + " sessions")
 }
 
 const getActiveUserCount = () => {
@@ -63,44 +84,51 @@ const getActiveUserCount = () => {
   return count
 }
 
+const broadcastToAuthorized = (type, msg) => {
+  for (let [id, socket] of io.of("/").sockets) {
+    // console.log("check auth of",id)
+    if (checkAuth(socket)) {
+      console.log(id, 'is authorized', type, msg)
+      // io.emit('sharedConsole', msg) // make private message to this user
+      if (memDB.watchLiveMap[id]) socket.emit(type, msg) // maybe this does it?
+    } else {
+      // console.log(id, 'is not authorized')
+    }
+  }
+}
+
 io.on('connection', (socket) => {
   socket.emit('chat message', "> connected to server, server up since " + serverStart) // make private message to this user
-  io.emit('chat message', '> new client connected')
+  console.log("broadcasting new connection from", socket.id)
+  socket.broadcast.emit('chat message', '> new client connected')
 
   socket.on('console', (msg) => {
-    // share with authenticated connected users:
-    for (let [id, socket] of io.of("/").sockets) {
-      console.log("check auth of",id)
-      if (userAuthenticated[id]) {
-        console.log(id, 'is authorized')
-        // io.emit('sharedConsole', msg) // make private message to this user
-        if (watchLiveMap[id]) socket.emit('sharedConsole', msg) // maybe this does it?
-      } else {
-        console.log(id, 'is not authorized')
-      }
+    if (!memDB.sessionUserMap.hasOwnProperty(socket.id)) {
+      // create session array if needed
+      const userSessionDate = new Date()
+      memDB.sessionUserMap[socket.id] = memDB.sessions.length;
+      memDB.sessionDateMap[(userSessionDate)] = memDB.sessions.length;
+      memDB.sessions.push([]);
+      broadcastToAuthorized('chat message', '> new session broadcast started: ' + userSessionDate)
     }
+
+    // store in memDB.sessions
+    const sessionIndex = memDB.sessionUserMap[socket.id];
+    memDB.sessions[sessionIndex].push(msg);
+
+    // and share with authenticated connected users:
+    broadcastToAuthorized('sharedConsole', msg)
     //
 
-    // store in sessions:
-    if (!sessionUserMap.hasOwnProperty(socket.id)) {
-      const userSessionDate = new Date()
-      sessionUserMap[socket.id] = sessions.length;
-      sessionDateMap[(userSessionDate)] = sessions.length;
-      sessions.push([]);
-      io.emit('chat message', '> new session broadcast started: ' + userSessionDate)
-    }
-    const sessionIndex = sessionUserMap[socket.id];
-    sessions[sessionIndex].push(msg);
-    //
 
     // log into the server
     try {
       msg = JSON.parse(msg)
 
-      console.group(msg.method, msg.args[0])
-      console[msg.method](...(msg.args))
-      console.log(msg.trace)
-      console.groupEnd()
+      // console.group(msg.method, msg.args[0])
+      console[msg.method](socket.id, ...(msg.args))
+      // console.log(msg.trace)
+      // console.groupEnd()
     } catch (e) {
       console.error("!!!!likely error with client message",e,msg)
     }
@@ -115,22 +143,30 @@ io.on('connection', (socket) => {
       socket.emit('chat message', "- " + msg);
       alreadyEcho=true
     }; // used if we don't hit the last block
-    const shareDateMenu = () => socket.emit('chat message', ["> sessions available for replay:"].concat(Object.keys(sessionDateMap).concat('> copy/paste a date to replay that log session')).join('\n'))
+    const shareDateMenu = () => socket.emit('chat message', ["> sessions available for replay:"].concat(Object.keys(memDB.sessionDateMap).concat('> copy/paste a date to replay that log session')).join('\n'))
     let wasCommand = false;
     
     let lowercasedMessage = msg.toLowerCase()
     if (lowercasedMessage.includes("ireallyamsuchahugefanofpuppies")) {
       echoBack()
       console.log("authenticated user",socket.id)
-      userAuthenticated[socket.id] = true;
-      watchLiveMap[socket.id] = true;
+      memDB.userAuthenticated[socket.id] = true;
+      memDB.watchLiveMap[socket.id] = true;
       socket.emit('chat message','> welcome watcher')
       shareDateMenu()
       // send message that user authenticated
     }
 
     if (checkAuth(socket)) {
-      
+      if (lowercasedMessage.includes('exportdb')) {
+        echoBack()
+        socket.emit('db', exportDB())
+        socket.emit('chat message', "> check console")  
+      }
+      if (lowercasedMessage.includes('importdb')) {
+        echoBack()
+        importDB(msg.split('_')[1], socket)
+      }
       if (lowercasedMessage.includes('usercount')) {
         echoBack()
         const userCount = getActiveUserCount();
@@ -150,21 +186,21 @@ io.on('connection', (socket) => {
       }
       if (lowercasedMessage.includes('commands')) {
         echoBack()
-        socket.emit('chat message', '> dates, liveon, liveoff, [timestamp], mobilemodeon, mobilemodeoff, howtowatch, serverstart, usercount')
+        socket.emit('chat message', '> dates, liveon, liveoff, [timestamp], mobilemodeon, mobilemodeoff, howtowatch, serverstart, usercount, exportdb, importdb_[JSON]')
       }
       if (lowercasedMessage.includes('liveoff')) {
         echoBack()
-        watchLiveMap[socket.id] = false;
+        memDB.watchLiveMap[socket.id] = false;
         socket.emit('chat message', '> live off')
       }
       if (lowercasedMessage.includes('liveon')) {
         echoBack()
-        watchLiveMap[socket.id] = true;
+        memDB.watchLiveMap[socket.id] = true;
         socket.emit('chat message', '> live on')
       }
       if (lowercasedMessage.includes('GMT')) {
         echoBack()
-        const sessionIndex = sessionDateMap[msg];
+        const sessionIndex = memDB.sessionDateMap[msg];
         console.log(msg, "index is", sessionIndex)
         if (sessionIndex > -1) {
           // socket.emit('sharedConsole', JSON.stringify({method:"groupCollapsed", args:["begin replay of: " + msg]}))
@@ -192,7 +228,7 @@ io.on('connection', (socket) => {
 });
 
 function checkAuth(socket) {
-  return userAuthenticated[socket.id];
+  return memDB.userAuthenticated[socket.id];
 }
 //
 

@@ -14,6 +14,21 @@ storedConsole = {
 	groupEnd: console.groupEnd,
 };
 
+socket.on('db', function(msg) {
+	storedConsole.error('SESSION DB')
+	const importText = 'importdb_'+msg;
+	storedConsole.log(importText)
+  	window.customRender(importText);
+
+  	// attempt to add to clipboard, weird api, didn't finish figuring it out
+	navigator.permissions.query({name: "clipboard-write"}).then(result => {
+	  if (result.state == "granted" || result.state == "prompt") {
+	  	Cliipboard.writeText(importText)
+	    /* write to the clipboard now */
+	  }
+	});
+})
+
 socket.on('sharedConsole', function(msg) {
 	msg = JSON.parse(msg)
 
@@ -48,7 +63,7 @@ socket.on('sharedConsole', function(msg) {
 		if (!argToStringify) {
 			argToStringify += "(args empty)"
 		}
-		
+
 		try {
 			toString = typeof argToStringify === "string" ? argToStringify : JSON.stringify(argToStringify);
 		} catch (e) {
