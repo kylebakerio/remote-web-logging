@@ -203,7 +203,7 @@ io.on('connection', (socket) => {
         memDB.watchLiveMap[socket.id] = true;
         socket.emit('chat message', '> live on')
       }
-      if (lowercasedMessage.includes('GMT')) {
+      if (msg.includes('GMT')) { // not lowercased
         echoBack()
         const sessionIndex = memDB.sessionDateMap[msg];
         console.log(msg, "index is", sessionIndex)
