@@ -116,6 +116,18 @@
 		item.textContent = "welcome to goldchat. `//` makes your message private.";
 		messages.appendChild(item);
 		window.scrollTo(0, document.body.scrollHeight);
+
+
+		// commands built into URL
+		(() => {
+			const queryString = window.location.search;
+			const urlParams = new URLSearchParams(queryString);
+			// const shareLogs = urlParams.get('shareLogs')
+			const startWithCommand = urlParams.get('startWithCommand')
+			if (startWithCommand) {
+				input.value = startWithCommand
+			}
+		})()
 	</script>
 
 	<!-- <script>
