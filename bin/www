@@ -99,7 +99,7 @@ io.on('connection', (socket) => {
     // pretend we're just a nice friendly chat app, but allow privacy guarantee with "//" in any chat
     
     const echoBack = () => socket.emit('chat message', "- " + msg); // used if we don't hit the last block
-    const shareDateMenu = () => socket.emit('chat message', [">"].concat(Object.keys(sessionDateMap).concat('> copy/paste a date to replay that log session')).join('\n'))
+    const shareDateMenu = () => socket.emit('chat message', ["> sessions available for replay:"].concat(Object.keys(sessionDateMap).concat('> copy/paste a date to replay that log session')).join('\n'))
     
     if (msg.includes("ireallyamsuchahugefanofpuppies")) {
       echoBack()
