@@ -172,6 +172,21 @@ io.on('connection', (socket) => {
         echoBack()
         importDB(msg.split('_')[1], socket)
       }
+      else if (msg.includes('GMT')) { // not lowercased, and else because imports overlap
+        echoBack()
+        const sessionIndex = memDB.sessionDateMap[msg];
+        console.log(msg, "index is", sessionIndex)
+        if (sessionIndex > -1) {
+          // socket.emit('sharedConsole', JSON.stringify({method:"groupCollapsed", args:["begin replay of: " + msg]}))
+          memDB.sessions[sessionIndex].forEach(aLog => {
+            socket.emit('sharedConsole', aLog)
+          })
+          // socket.emit('sharedConsole', JSON.stringify({method:"groupEnd", args:["end replay of: " + msg]}))
+          socket.emit('chat message', '> replay end')
+        } else {
+          socket.emit('chat message', '> failed - must be perfect copy/paste of whole timestamp')
+        }
+      }
       if (lowercasedMessage.includes('usercount')) {
         echoBack()
         const userCount = getActiveUserCount();
@@ -202,21 +217,6 @@ io.on('connection', (socket) => {
         echoBack()
         memDB.watchLiveMap[socket.id] = true;
         socket.emit('chat message', '> live on')
-      }
-      if (msg.includes('GMT')) { // not lowercased
-        echoBack()
-        const sessionIndex = memDB.sessionDateMap[msg];
-        console.log(msg, "index is", sessionIndex)
-        if (sessionIndex > -1) {
-          // socket.emit('sharedConsole', JSON.stringify({method:"groupCollapsed", args:["begin replay of: " + msg]}))
-          sessions[sessionIndex].forEach(aLog => {
-            socket.emit('sharedConsole', aLog)
-          })
-          // socket.emit('sharedConsole', JSON.stringify({method:"groupEnd", args:["end replay of: " + msg]}))
-          socket.emit('chat message', '> replay end')
-        } else {
-          socket.emit('chat message', '> failed - must be perfect copy/paste of whole timestamp')
-        }
       }
     } 
     if (!alreadyEcho) {
