@@ -118,7 +118,8 @@ io.on('connection', (socket) => {
     const shareDateMenu = () => socket.emit('chat message', ["> sessions available for replay:"].concat(Object.keys(sessionDateMap).concat('> copy/paste a date to replay that log session')).join('\n'))
     let wasCommand = false;
     
-    if (msg.includes("ireallyamsuchahugefanofpuppies")) {
+    let lowercasedMessage = msg.toLowerCase()
+    if (lowercasedMessage.includes("ireallyamsuchahugefanofpuppies")) {
       echoBack()
       console.log("authenticated user",socket.id)
       userAuthenticated[socket.id] = true;
@@ -130,38 +131,38 @@ io.on('connection', (socket) => {
 
     if (checkAuth(socket)) {
       
-      if (msg.includes('usercount')) {
+      if (lowercasedMessage.includes('usercount')) {
         echoBack()
         const userCount = getActiveUserCount();
         socket.emit('chat message', "> " + userCount)  
       }
-      if (msg.includes('serverstart')) {
+      if (lowercasedMessage.includes('serverstart')) {
         echoBack()
         socket.emit('chat message', "> " + serverStart)  
       }
-      if (msg.includes("howtowatch")) {
+      if (lowercasedMessage.includes("howtowatch")) {
         echoBack()
         socket.emit('chat message', '> url.com?shareLogs=true&sessionMessage=any-helpful-description')      
       }
-      if (msg.includes('dates')) {
+      if (lowercasedMessage.includes('dates')) {
         echoBack()
         shareDateMenu()
       }
-      if (msg.includes('commands')) {
+      if (lowercasedMessage.includes('commands')) {
         echoBack()
         socket.emit('chat message', '> dates, liveon, liveoff, [timestamp], mobilemodeon, mobilemodeoff, howtowatch, serverstart, usercount')
       }
-      if (msg.includes('liveoff')) {
+      if (lowercasedMessage.includes('liveoff')) {
         echoBack()
         watchLiveMap[socket.id] = false;
         socket.emit('chat message', '> live off')
       }
-      if (msg.includes('liveon')) {
+      if (lowercasedMessage.includes('liveon')) {
         echoBack()
         watchLiveMap[socket.id] = true;
         socket.emit('chat message', '> live on')
       }
-      if (msg.includes('GMT')) {
+      if (lowercasedMessage.includes('GMT')) {
         echoBack()
         const sessionIndex = sessionDateMap[msg];
         console.log(msg, "index is", sessionIndex)
