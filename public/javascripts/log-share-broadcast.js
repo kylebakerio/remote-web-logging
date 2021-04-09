@@ -1,17 +1,5 @@
 
-// var form = document.getElementById('form');
-// var input = document.getElementById('input');
-
-// form.addEventListener('submit', function(e) {
-	// e.preventDefault();
-	// if (input.value) {
-	//   console.log("hi")
-	//   socket.emit('chat message', input.value);
-	//   input.value = '';
-	// }
-// });
-	
-
+(function() {
 if (!socket) {
 	var socket = location.hostname === "localhost" ? io() : io('https://log-share.herokuapp.com/');
 	var storedConsole = {
@@ -88,6 +76,16 @@ window.addEventListener('unhandledrejection', function (e) {
 	realErrorHandler(e.reason.message, e.reason.stack)
 	return false;
 });
+
+const queryString = window.location.search;
+const urlParams = new URLSearchParams(queryString);
+// const shareLogs = urlParams.get('shareLogs')
+const sessionMessage = urlParams.get('sessionMessage')
+if (sessionMessage) {
+	setTimeout(() => { console.error("SESSION MESSAGE", sessionMessage)})
+}
+
+})()
 
 
 // Note: You can catch programmer-generated and runtime exceptions, but you can’t catch JavaScript syntax errors.

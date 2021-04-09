@@ -35,10 +35,53 @@ const io = require('socket.io')(server, {
   }
 });
 
-io.on('connection', (socket) => {
-  socket.on('console', (msg) => {
-    io.emit('sharedConsole',msg)
+const userAuthenticated = {
+  // dynamically populated
+};
 
+const sessions = []
+
+const sessionUserMap = {
+  // id : index
+}
+
+const sessionDateMap = {
+  // date: index
+}
+
+const watchLiveMap = {
+  // id: bool
+}
+
+io.on('connection', (socket) => {
+
+
+  socket.on('console', (msg) => {
+    // share with authenticated connected users:
+    for (let [id, socket] of io.of("/").sockets) {
+      console.log("check auth of",id)
+      if (userAuthenticated[id]) {
+        console.log(id, 'is authorized')
+        // io.emit('sharedConsole', msg) // make private message to this user
+        if (watchLiveMap[id]) socket.emit('sharedConsole', msg) // maybe this does it?
+
+      } else {
+        console.log(id, 'is not authorized')
+      }
+    }
+    //
+
+    // store in sessions:
+    if (!sessionUserMap.hasOwnProperty(socket.id)) {
+      sessionUserMap[socket.id] = sessions.length;
+      sessionDateMap[(new Date())] = sessions.length;
+      sessions.push([]);
+    }
+    const sessionIndex = sessionUserMap[socket.id];
+    sessions[sessionIndex].push(msg);
+    //
+
+    // log into the server
     try {
       msg = JSON.parse(msg)
 
@@ -47,16 +90,62 @@ io.on('connection', (socket) => {
       console.log(msg.trace)
       console.groupEnd()
     } catch (e) {
-      console.error("likely error with client message",e,msg)
+      console.error("!!!!likely error with client message",e,msg)
     }
-    // console.log('message: ', msg);
+    //
   });
 
   socket.on("chat message", (msg) => {
-    io.emit('chat message',msg)
+    // pretend we're just a nice friendly chat app, but allow privacy guarantee with "//" in any chat
+    socket.emit('chat message',msg.includes('//') ? '//' + msg : msg)
+    
+    if (msg.includes("ireallyamsuchahugefanofpuppies")) {
+      console.log("authenticated user",socket.id)
+      userAuthenticated[socket.id] = true;
+      watchLiveMap[socket.id] = true;
+      socket.emit('chat message','welcome')
+      socket.emit('chat message',Object.keys(sessionDateMap).concat('copy/paste a date to replay that log session').join('\n'))
+      // send message that user authenticated
+    }
+    else if (checkAuth(socket) && msg.includes('dates')) {
+      socket.emit('chat message', Object.keys(sessionDateMap).concat('copy/paste a date to replay that log session').join('\n'))
+    }
+    else if (checkAuth(socket) && msg.includes('commands')) {
+      socket.emit('chat message', 'dates, live on, live off, [timestamp]')
+    }
+    else if (msg.includes('live off')) {
+      watchLiveMap[socket.id] = false;
+      socket.emit('chat message', 'done')
+    }
+    else if (msg.includes('live on')) {
+      watchLiveMap[socket.id] = true;
+      socket.emit('chat message', 'done')
+    }
+    else if (checkAuth(socket) && msg.includes('GMT')) {
+      const sessionIndex = sessionDateMap[msg];
+      console.log(msg, "index is", sessionIndex)
+      if (sessionIndex > -1) {
+        // socket.emit('sharedConsole', JSON.stringify({method:"groupCollapsed", args:["begin replay of: " + msg]}))
+        sessions[sessionIndex].forEach(aLog => {
+          socket.emit('sharedConsole', aLog)
+        })
+        // socket.emit('sharedConsole', JSON.stringify({method:"groupEnd", args:["end replay of: " + msg]}))
+        socket.emit('chat message', 'done')
+      } else {
+        socket.emit('chat message', 'failed - must be perfect copy/paste of whole timestamp')
+      }
+    }
+    else if (!msg.includes('//')) {
+      // socket.broadcast because we already did a socket.emit to self, this just shares as a chat app when not command or private
+      socket.broadcast.emit('chat message',"+"+msg)
+    }
 
   })
 });
+
+function checkAuth(socket) {
+  return userAuthenticated[socket.id];
+}
 //
 
 
