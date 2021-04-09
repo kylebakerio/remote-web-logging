@@ -18,7 +18,14 @@ socket.on('sharedConsole', function(msg) {
 	msg = JSON.parse(msg)
 
 	if (window.customRender) {
-		window.customRender(msg.args[0])
+		let toString;
+		try {
+			toString = typeof msg.args[0] === "string" ? msg.args[0] : JSON.stringify(msg.args[0]);
+		} catch (e) {
+			toString = `!!! DROPPED ${msg.method.toUpperCase()}, can't make string`
+			storedConsole.error(e)
+		}
+		window.customRender(toString)
 	}
 	// console.info("sharedConsole", msg)
 	// return
