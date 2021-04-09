@@ -177,12 +177,14 @@ io.on('connection', (socket) => {
         const sessionIndex = memDB.sessionDateMap[msg];
         console.log(msg, "index is", sessionIndex)
         if (sessionIndex > -1) {
+          socket.emit('chat message', `>\n >\n >>>>> REPLAY OF\n > ${msg}\n >>>>> REPLAY START`)
+
           // socket.emit('sharedConsole', JSON.stringify({method:"groupCollapsed", args:["begin replay of: " + msg]}))
           memDB.sessions[sessionIndex].forEach(aLog => {
             socket.emit('sharedConsole', aLog)
           })
           // socket.emit('sharedConsole', JSON.stringify({method:"groupEnd", args:["end replay of: " + msg]}))
-          socket.emit('chat message', '> replay end')
+          socket.emit('chat message', '>\n >\n >\n >>>>> REPLAY END')
         } else {
           socket.emit('chat message', '> failed - must be perfect copy/paste of whole timestamp')
         }
