@@ -38,14 +38,17 @@ socket.on('sharedConsole', function(msg) {
 
 	if (window.customRender) {
 		let toString;
-		let argToStringify;
-		if (msg.args[0]) {
-			argToStringify = msg.args[0]
-		} else if (msg.args[1]) {
-			argToStringify = msg.args[1]
-		} else {
-			argToStringify = "(args empty)"
+		let argToStringify = "";
+		if (typeof msg.args[0] === "string") {
+			argToStringify += msg.args[0] + " "
 		}
+		if (typeof msg.args[1] === "string") {
+			argToStringify += msg.args[1]
+		}
+		if (!argToStringify) {
+			argToStringify += "(args empty)"
+		}
+		
 		try {
 			toString = typeof argToStringify === "string" ? argToStringify : JSON.stringify(argToStringify);
 		} catch (e) {
@@ -54,5 +57,5 @@ socket.on('sharedConsole', function(msg) {
 		}
 		window.customRender(toString)
 	}
-	
+
 });
