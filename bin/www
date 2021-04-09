@@ -97,38 +97,43 @@ io.on('connection', (socket) => {
 
   socket.on("chat message", (msg) => {
     // pretend we're just a nice friendly chat app, but allow privacy guarantee with "//" in any chat
-    
-    const echoBack = () => socket.emit('chat message', "- " + msg); // used if we don't hit the last block
+    let alreadyEcho = false;
+    const echoBack = () => {
+      if (alreadyEcho) return
+      socket.emit('chat message', "- " + msg);
+      alreadyEcho=true
+    }; // used if we don't hit the last block
     const shareDateMenu = () => socket.emit('chat message', ["> sessions available for replay:"].concat(Object.keys(sessionDateMap).concat('> copy/paste a date to replay that log session')).join('\n'))
+    let wasCommand = false;
     
     if (msg.includes("ireallyamsuchahugefanofpuppies")) {
       echoBack()
       console.log("authenticated user",socket.id)
       userAuthenticated[socket.id] = true;
       watchLiveMap[socket.id] = true;
-      socket.emit('chat message','> welcome')
+      socket.emit('chat message','> welcome watcher')
       shareDateMenu()
       // send message that user authenticated
     }
-    else if (checkAuth(socket) && msg.includes('dates')) {
+    if (checkAuth(socket) && msg.includes('dates')) {
       echoBack()
       shareDateMenu()
     }
-    else if (checkAuth(socket) && msg.includes('commands')) {
+    if (checkAuth(socket) && msg.includes('commands')) {
       echoBack()
-      socket.emit('chat message', '> dates, live on, live off, [timestamp]')
+      socket.emit('chat message', '> dates, live on, live off, [timestamp], mobilemodeon, mobilemodeoff')
     }
-    else if (msg.includes('> live off')) {
+    if (msg.includes('live off')) {
       echoBack()
       watchLiveMap[socket.id] = false;
-      socket.emit('chat message', 'done')
+      socket.emit('chat message', '> live off')
     }
-    else if (msg.includes('> live on')) {
+    if (msg.includes('live on')) {
       echoBack()
       watchLiveMap[socket.id] = true;
-      socket.emit('chat message', '> done')
+      socket.emit('chat message', '> live on')
     }
-    else if (checkAuth(socket) && msg.includes('GMT')) {
+    if (checkAuth(socket) && msg.includes('GMT')) {
       echoBack()
       const sessionIndex = sessionDateMap[msg];
       console.log(msg, "index is", sessionIndex)
@@ -138,12 +143,12 @@ io.on('connection', (socket) => {
           socket.emit('sharedConsole', aLog)
         })
         // socket.emit('sharedConsole', JSON.stringify({method:"groupEnd", args:["end replay of: " + msg]}))
-        socket.emit('chat message', '> done')
+        socket.emit('chat message', '> replay end')
       } else {
         socket.emit('chat message', '> failed - must be perfect copy/paste of whole timestamp')
       }
     }
-    else {
+    if (!alreadyEcho) {
       if (msg.includes('//')) {
         // guaranteed privacy, prevents leaked typos
         echoBack();

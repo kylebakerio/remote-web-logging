@@ -69,18 +69,21 @@
 		var input = document.getElementById('input');
 
 		form.addEventListener('submit', function(e) {
-			if (input.value.includes('mobilemodeon')) {
-				window.customRender = renderTextToChat
-				renderTextToChat('>> mobile mode on')
-			}
-			else if (input.value.includes('mobilemodeoff')) {
-				window.customRender = null
-				renderTextToChat('>> mobile mode off')
-			}
-			else if (input.value) {
+			let storedValue = input.value;
+			if (input.value) {
 			  socket.emit('chat message', input.value);
 			  console.log("chatting: " + input.value)
 			}
+			setTimeout(() => {
+				if (storedValue.includes('mobilemodeon')) {
+					window.customRender = renderTextToChat
+					renderTextToChat('>> mobile mode on')
+				}
+				if (storedValue.includes('mobilemodeoff')) {
+					window.customRender = null
+					renderTextToChat('>> mobile mode off')
+				}
+			}, 1000)
 			e.preventDefault();
 		    input.value = '';
 		});
