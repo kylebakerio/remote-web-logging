@@ -16,6 +16,10 @@ storedConsole = {
 
 socket.on('sharedConsole', function(msg) {
 	msg = JSON.parse(msg)
+
+	if (window.customRender) {
+		window.customRender(msg.args[0])
+	}
 	// console.info("sharedConsole", msg)
 	// return
 

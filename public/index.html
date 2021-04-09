@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
+    <title>goldchat</title>
     <style>
       body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
@@ -21,7 +21,6 @@
       <input id="input" autocomplete="off" /><button>Send</button>
     </form>
   </body>
-
 
 	<script src="/socket.io/socket.io.js"></script>
 <!-- 	<script src="/javascripts/log-share-broadcast.js"></script>
@@ -70,21 +69,24 @@
 		var input = document.getElementById('input');
 
 		form.addEventListener('submit', function(e) {
-			e.preventDefault();
-			if (input.value) {
+			if (input.value.includes('mobilemodeon')) {
+				window.customRender = renderTextToChat
+				renderTextToChat('>> mobile mode on')
+			}
+			else if (input.value.includes('mobilemodeoff')) {
+				window.customRender = null
+				renderTextToChat('>> mobile mode off')
+			}
+			else if (input.value) {
 			  socket.emit('chat message', input.value);
 			  console.log("chatting: " + input.value)
-			  input.value = '';
 			}
+			e.preventDefault();
+		    input.value = '';
 		});
 
-
-		socket.on('chat message', function(msg) {
-			// msg = JSON.parse(msg)
-			// console.info("sharedConsole", msg)
-			// return
-
-			let msgs = msg.split("\n");
+		function renderTextToChat(txt) {
+			let msgs = txt.split("\n");
 
 			msgs.forEach(m => {
 				var item = document.createElement('li');
@@ -92,11 +94,18 @@
 				messages.appendChild(item);
 				window.scrollTo(0, document.body.scrollHeight);
 			})
+		}
 
+
+		socket.on('chat message', function(msg) {
+			// msg = JSON.parse(msg)
+			// console.info("sharedConsole", msg)
+			// return
+			renderTextToChat(msg)
 		})
 
 		var item = document.createElement('li');
-		item.textContent = "enter password. or not.";
+		item.textContent = "welcome to goldchat. `//` makes your message private.";
 		messages.appendChild(item);
 		window.scrollTo(0, document.body.scrollHeight);
 	</script>

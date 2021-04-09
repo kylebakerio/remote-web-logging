@@ -82,7 +82,7 @@ const urlParams = new URLSearchParams(queryString);
 // const shareLogs = urlParams.get('shareLogs')
 const sessionMessage = urlParams.get('sessionMessage')
 if (sessionMessage) {
-	setTimeout(() => { console.error("SESSION MESSAGE", sessionMessage)})
+	setTimeout(() => { console.error("SESSION MESSAGE: " + sessionMessage)})
 }
 
 })()
