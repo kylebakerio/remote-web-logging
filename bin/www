@@ -65,7 +65,7 @@ const getActiveUserCount = () => {
 
 io.on('connection', (socket) => {
   socket.emit('chat message', "> connected to server, server up since " + serverStart) // make private message to this user
-  io.emit('chat message', 'new client connected')
+  io.emit('chat message', '> new client connected')
 
   socket.on('console', (msg) => {
     // share with authenticated connected users:
@@ -87,7 +87,7 @@ io.on('connection', (socket) => {
       sessionUserMap[socket.id] = sessions.length;
       sessionDateMap[(userSessionDate)] = sessions.length;
       sessions.push([]);
-      io.emit('chat message', 'new session broadcast started: ' + userSessionDate)
+      io.emit('chat message', '> new session broadcast started: ' + userSessionDate)
     }
     const sessionIndex = sessionUserMap[socket.id];
     sessions[sessionIndex].push(msg);
