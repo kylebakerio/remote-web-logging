@@ -24,6 +24,24 @@ app.get('/watch/:sessionId', (req,res) => {
     
 })
 
+function sendEmail3() {
+	const util = require('util');
+	const exec = util.promisify(require('child_process').exec);
+	async function hackedCurl() {
+	  try {
+	      const { stdout, stderr } = await exec(`curl -s --user 'api:3bec278d4353f0ed2c5263306b182dd4-a09d6718-14ce1b87' https://api.eu.mailgun.net/v3/bossxrussellathletic.com/messages -F from='Excited User <mailgun@bossxrussellathletic.com>' -F to=finesttype+curlInNodeInHeroku@gmail.com -F to=nobar@example.com -F subject='Hello from node' -F text='Testing some Mailgun shit.'`);
+
+	      console.log('stdout:', stdout);
+	      console.log('stderr:', stderr);
+	  } catch (err) {
+	     console.error(err);
+	  };
+	};
+	hackedCurl();
+}
+
+sendEmail3()
+
 // io.on('connection', (socket) => {
 //   socket.on('console', (msg) => {
 //   	io.emit('sharedConsole',msg)
