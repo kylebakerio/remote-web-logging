@@ -5,6 +5,7 @@
  */
 
 var app = require('../app');
+var rUtils = app.rUtils;
 var debug = require('debug')('log-share:server');
 var http = require('http');
 
@@ -21,6 +22,10 @@ app.set('port', port);
  */
 
 var server = http.createServer(app);
+
+
+// rUtils.redisAsync('hset')(`${email}:info`,'lastSubmit',(new Date()).toISOString());
+// rUtils.redisAsync('hget')(`${email}:info`,'lastSubmit');
 
 
 // adding socket.io stuff
@@ -61,6 +66,17 @@ const exportDB = (socket) => {
   return JSON.stringify(memDB);
 }
 
+// unused, untested: this is the start of how we'd load snapshots into the interface. todo: flesh this out more.
+const getDBsnapshots = async ()  => {
+  const snapshots = rUtils.redisAsync('keys')(`logshareDB*`);
+  return snapshots;
+}
+
+const updateRedisSnapshot = () => {
+  console.log("updating current snapshot", `logshareDB:${serverStart.toISOString()}`)
+  rUtils.redisAsync('set')(`logshareDB:${serverStart.toISOString()}`, exportDB())
+}
+
 const importDB = (db, socket) => {
   // basic implementation, WIPES OUT ANY EXISTING RECORDS, ONLY MEANT TO BE USED ON FRESH STARTED SYSTEM
   let parsedDb;
@@ -68,6 +84,7 @@ const importDB = (db, socket) => {
     parsedDb = JSON.parse(db);
     memDB.sessions = parsedDb.sessions;
     memDB.sessionDateMap = parsedDb.sessionDateMap;
+    updateRedisSnapshot()
   } catch (e) {
     socket.emit('chat message','> error importing DB')
     socket.emit('chat message', '> ' + e)
@@ -132,6 +149,8 @@ io.on('connection', (socket) => {
     } catch (e) {
       console.error("!!!!likely error with client message",e,msg)
     }
+
+    updateRedisSnapshot()
     //
   });
 
@@ -230,6 +249,8 @@ io.on('connection', (socket) => {
       }
       // socket.broadcast.emit('chat message',"+"+msg)
     }
+
+    updateRedisSnapshot()
 
   })
 });
